@@ -20,6 +20,11 @@ canvas.height = 600;
 const midLine = canvas.width / 2;
 
 let keys = {};
+let bullets = [];
+let heals = [];
+
+// random crap values and shit
+let lastHealSpawn = 0;
 
 // Inpot handling
 window.addEventListener("keydown", e => {
@@ -36,7 +41,8 @@ const player1 = {
   y: canvas.height / 2,
   radius: 20,
   speed: 4,
-  color: "red"
+  color: "red",
+  hp: 100
 };
 
 const player2 = {
@@ -44,15 +50,52 @@ const player2 = {
   y: canvas.height / 2,
   radius: 20,
   speed: 4,
-  color: "cyan"
+  color: "cyan",
+  hp: 100
 };
 
+function shoot(player, direction) {
+  bullets.push({
+    x: player.x,
+    y: player.y,
+    dx: direction,
+    dy: 0,
+    radius: 5,
+    owner: player
+  });
+}
+
+// random heal spawning
+function spawnHeal() {
+  const side = Math.random() < 0.5 ? 0 : 1;
+
+  let x;
+  if (side === 0) {
+    x = Math.random() * (midLine - 40) + 20;
+  } else {
+    x = Math.random() * (canvas.width - midLine - 40) + midLine + 20;
+  }
+
+  heals.push({
+    x: x,
+    y: Math.random() * (canvas.height - 40) + 20,
+    radius: 10
+  });
+}
+
 function update() {
+
   // Player 1(destra) wasd
   if (keys["w"]) player1.y -= player1.speed;
   if (keys["s"]) player1.y += player1.speed;
   if (keys["a"]) player1.x -= player1.speed;
   if (keys["d"]) player1.x += player1.speed;
+
+  // shoot key f or something idk
+  if (keys["f"]) {
+    shoot(player1, 6);
+    keys["f"] = false;
+  }
 
   // Player 2(sinistra) jkli or arrow keys 
   if (keys["i"] || keys["arrowup"]) player2.y -= player2.speed;
@@ -60,42 +103,78 @@ function update() {
   if (keys["j"] || keys["arrowleft"]) player2.x -= player2.speed;
   if (keys["l"] || keys["arrowright"]) player2.x += player2.speed;
 
+  // shoot key ; yea weird key
+  if (keys[","]) {
+    shoot(player2, -6);
+    keys[","] = false;
+  }
+
+  // move bullets and stuff
+  bullets.forEach((b, index) => {
+    b.x += b.dx;
+    b.y += b.dy;
+
+    // remove bullet if outside map because yes
+    if (b.x < 0 || b.x > canvas.width) {
+      bullets.splice(index, 1);
+    }
+
+    // collision with players and shit
+    let target = b.owner === player1 ? player2 : player1;
+    const dist = Math.hypot(b.x - target.x, b.y - target.y);
+
+    if (dist < b.radius + target.radius) {
+      target.hp -= 10;
+      bullets.splice(index, 1);
+    }
+  });
+
+  // heal pickup logic thingy
+  heals.forEach((h, index) => {
+    [player1, player2].forEach(p => {
+      const dist = Math.hypot(h.x - p.x, h.y - p.y);
+      if (dist < h.radius + p.radius) {
+        p.hp += 20;
+        if (p.hp > 100) p.hp = 100;
+        heals.splice(index, 1);
+      }
+    });
+  });
+
+  // random spawn every few sec or whatever
+  if (Date.now() - lastHealSpawn > 5000) {
+    spawnHeal();
+    lastHealSpawn = Date.now();
+  }
+
   constrainPlayer1();
   constrainPlayer2();
 }
 
 function constrainPlayer1() {
-  // muro sinistri
     if (player1.x - player1.radius < 0)
         player1.x = player1.radius;
 
-    // sopra
     if (player1.y - player1.radius < 0)
         player1.y = player1.radius;
 
-        //sotto
     if (player1.y + player1.radius > canvas.height)
         player1.y = canvas.height - player1.radius;
 
-    // liea
     if (player1.x + player1.radius > midLine)
         player1.x = midLine - player1.radius;
 }
 
 function constrainPlayer2() {
-  // muro destro
   if (player2.x + player2.radius > canvas.width)
     player2.x = canvas.width - player2.radius;
 
-  // soprta
   if (player2.y - player2.radius < 0)
     player2.y = player2.radius;
 
-  // sotto
   if (player2.y + player2.radius > canvas.height)
     player2.y = canvas.height - player2.radius;
 
-  // delimita linea
   if (player2.x - player2.radius < midLine)
     player2.x = midLine + player2.radius;
 }
@@ -111,6 +190,22 @@ function draw() {
   ctx.lineTo(midLine, canvas.height);
   ctx.stroke();
 
+  // heals green little circle thing
+  ctx.fillStyle = "lime";
+  heals.forEach(h => {
+    ctx.beginPath();
+    ctx.arc(h.x, h.y, h.radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
+  // bullets white dots
+  ctx.fillStyle = "white";
+  bullets.forEach(b => {
+    ctx.beginPath();
+    ctx.arc(b.x, b.y, b.radius, 0, Math.PI * 2);
+    ctx.fill();
+  });
+
   ctx.fillStyle = player1.color;
   ctx.beginPath();
   ctx.arc(player1.x, player1.y, player1.radius, 0, Math.PI * 2);
@@ -120,6 +215,20 @@ function draw() {
   ctx.beginPath();
   ctx.arc(player2.x, player2.y, player2.radius, 0, Math.PI * 2);
   ctx.fill();
+
+  // display and stuff
+  ctx.fillStyle = "white";
+  ctx.fillText("P1 HP: " + player1.hp, 20, 20);
+  ctx.fillText("P2 HP: " + player2.hp, canvas.width - 120, 20);
+
+  // game over kinda
+  if (player1.hp <= 0) {
+    ctx.fillText("CYAN WINS LOL", canvas.width/2 - 60, canvas.height/2);
+  }
+
+  if (player2.hp <= 0) {
+    ctx.fillText("RED WINS LOL", canvas.width/2 - 60, canvas.height/2);
+  }
 }
 
 function gameLoop() {
