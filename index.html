@@ -14,6 +14,9 @@
 const canvas = document.getElementById("game");
 const ctx = canvas.getContext("2d");
 
+let gameOver = false;
+let winnerText = "";
+
 canvas.width = 1000;
 canvas.height = 600;
 
@@ -28,7 +31,10 @@ let lastHealSpawn = 0;
 
 // Inpot handling
 window.addEventListener("keydown", e => {
-  keys[e.key.toLowerCase()] = true;
+    keys[e.key.toLowerCase()] = true;
+    if (e.key.toLowerCase() === "r" && gameOver) {
+        resetGame();
+    }
 });
 
 window.addEventListener("keyup", e => {
@@ -83,72 +89,100 @@ function spawnHeal() {
   });
 }
 
+function resetGame() {
+  player1.hp = 100;
+  player2.hp = 100;
+
+  player1.x = midLine / 2;
+  player1.y = canvas.height / 2;
+
+  player2.x = midLine + midLine / 2;
+  player2.y = canvas.height / 2;
+
+  bullets = [];
+  heals = [];
+  gameOver = false;
+}
+
+
 function update() {
+    if (gameOver) return;
+    // Player 1(destra) wasd
+    if (keys["w"]) player1.y -= player1.speed;
+    if (keys["s"]) player1.y += player1.speed;
+    if (keys["a"]) player1.x -= player1.speed;
+    if (keys["d"]) player1.x += player1.speed;
 
-  // Player 1(destra) wasd
-  if (keys["w"]) player1.y -= player1.speed;
-  if (keys["s"]) player1.y += player1.speed;
-  if (keys["a"]) player1.x -= player1.speed;
-  if (keys["d"]) player1.x += player1.speed;
-
-  // shoot key f or something idk
-  if (keys["f"]) {
-    shoot(player1, 6);
-    keys["f"] = false;
-  }
-
-  // Player 2(sinistra) jkli or arrow keys 
-  if (keys["i"] || keys["arrowup"]) player2.y -= player2.speed;
-  if (keys["k"] || keys["arrowdown"]) player2.y += player2.speed;
-  if (keys["j"] || keys["arrowleft"]) player2.x -= player2.speed;
-  if (keys["l"] || keys["arrowright"]) player2.x += player2.speed;
-
-  // shoot key ; yea weird key
-  if (keys[","]) {
-    shoot(player2, -6);
-    keys[","] = false;
-  }
-
-  // move bullets and stuff
-  bullets.forEach((b, index) => {
-    b.x += b.dx;
-    b.y += b.dy;
-
-    // remove bullet if outside map because yes
-    if (b.x < 0 || b.x > canvas.width) {
-      bullets.splice(index, 1);
+    // shoot key f or something idk
+    if (keys["f"]) {
+        shoot(player1, 6);
+        keys["f"] = false;
     }
 
-    // collision with players and shit
-    let target = b.owner === player1 ? player2 : player1;
-    const dist = Math.hypot(b.x - target.x, b.y - target.y);
+    // Player 2(sinistra) jkli or arrow keys 
+    if (keys["i"] || keys["arrowup"]) player2.y -= player2.speed;
+    if (keys["k"] || keys["arrowdown"]) player2.y += player2.speed;
+    if (keys["j"] || keys["arrowleft"]) player2.x -= player2.speed;
+    if (keys["l"] || keys["arrowright"]) player2.x += player2.speed;
 
-    if (dist < b.radius + target.radius) {
-      target.hp -= 10;
-      bullets.splice(index, 1);
+    // shoot key ; yea weird key
+    if (keys[","]) {
+        shoot(player2, -6);
+        keys[","] = false;
     }
-  });
 
-  // heal pickup logic thingy
-  heals.forEach((h, index) => {
-    [player1, player2].forEach(p => {
-      const dist = Math.hypot(h.x - p.x, h.y - p.y);
-      if (dist < h.radius + p.radius) {
-        p.hp += 20;
-        if (p.hp > 100) p.hp = 100;
-        heals.splice(index, 1);
-      }
+    // move bullets and stuff
+    bullets.forEach((b, index) => {
+        b.x += b.dx;
+        b.y += b.dy;
+
+        // remove bullet if outside map because yes
+        if (b.x < 0 || b.x > canvas.width) {
+        bullets.splice(index, 1);
+        }
+
+        // collision with players and shit
+        let target = b.owner === player1 ? player2 : player1;
+        const dist = Math.hypot(b.x - target.x, b.y - target.y);
+
+        if (dist < b.radius + target.radius) {
+        target.hp -= 10;
+        bullets.splice(index, 1);
+        }
     });
-  });
 
-  // random spawn every few sec or whatever
-  if (Date.now() - lastHealSpawn > 5000) {
-    spawnHeal();
-    lastHealSpawn = Date.now();
-  }
+    // heal pickup logic thingy
+    heals.forEach((h, index) => {
+        [player1, player2].forEach(p => {
+        const dist = Math.hypot(h.x - p.x, h.y - p.y);
+        if (dist < h.radius + p.radius) {
+            p.hp += 20;
+            if (p.hp > 100) p.hp = 100;
+            heals.splice(index, 1);
+        }
+        });
+    });
 
-  constrainPlayer1();
-  constrainPlayer2();
+    // random spawn every few sec or whatever
+    if (Date.now() - lastHealSpawn > 5000) {
+        spawnHeal();
+        lastHealSpawn = Date.now();
+    }
+
+    constrainPlayer1();
+    constrainPlayer2();
+    if (!gameOver) {
+        if (player1.hp <= 0) {
+            gameOver = true;
+            winnerText = "CYAN WINS";
+        }
+
+        if (player2.hp <= 0) {
+            gameOver = true;
+            winnerText = "RED WINS";
+        }
+}
+
 }
 
 function constrainPlayer1() {
@@ -221,14 +255,25 @@ function draw() {
   ctx.fillText("P1 HP: " + player1.hp, 20, 20);
   ctx.fillText("P2 HP: " + player2.hp, canvas.width - 120, 20);
 
-  // game over kinda
-  if (player1.hp <= 0) {
-    ctx.fillText("CYAN WINS LOL", canvas.width/2 - 60, canvas.height/2);
-  }
+if (gameOver) {
+  ctx.fillStyle = "rgba(0, 0, 0, 0.7)"; //overlay mezzo trasparente
+  ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-  if (player2.hp <= 0) {
-    ctx.fillText("RED WINS LOL", canvas.width/2 - 60, canvas.height/2);
-  }
+  ctx.fillStyle = "white";
+  ctx.textAlign = "center";
+
+  ctx.font = "60px Arial"; //il font l'ha scelto qualcuno più intelligente di me
+  ctx.fillText("GAME OVER", canvas.width / 2, canvas.height / 2 - 60);
+
+  ctx.font = "40px Arial";
+  ctx.fillText(winnerText, canvas.width / 2, canvas.height / 2);
+
+  ctx.font = "20px Arial";
+  ctx.fillText("Press R to Restart", canvas.width / 2, canvas.height / 2 + 50);
+
+  ctx.textAlign = "start";
+}
+
 }
 
 function gameLoop() {
