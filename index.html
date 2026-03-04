@@ -286,7 +286,8 @@ function drawLegend() {
 
   ctx.fillStyle = "rgba(0, 0, 0, 0.5)";
   ctx.beginPath();
-  ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 15); // 15 = corner radius
+  //round rect with corner radius 15
+  ctx.roundRect(rectX, rectY, rectWidth, rectHeight, 15);
   ctx.fill();
 
   ctx.textAlign = "center";
