@@ -94,12 +94,12 @@ const player2 = {
 };
 
 function shoot(player, direction) {
-  shooting_sound.currentTime = 0;
-  shooting_sound.play();
   const now = Date.now();
   if (now - player.lastShot < player.shootCooldown) return;
 
   player.lastShot = now;
+  shooting_sound.currentTime = 0;
+  shooting_sound.play();
 
   bullets.push({
     x: player.x,
