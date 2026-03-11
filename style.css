@@ -6,3 +6,46 @@ html, body {
   overflow: hidden;
   background: black;
 }
+
+#overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: url("assets/sprites/space2.jpg");
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 9999;
+}
+
+#startButton {
+  padding: 14px 40px;
+  font-size: 23px;
+  font-weight: bold;
+  color: #fff;
+  background: #0077ff;
+  border: none;
+  border-radius: 11px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+}
+
+#startButton::after {
+  content: "START";       /* default text */
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.3s;
+}
+
+#startButton:hover::after {
+  content: "STARTING";    /* text on hover */
+}
