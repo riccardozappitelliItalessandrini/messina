@@ -24,16 +24,19 @@ background_image.src = "assets/sprites/space.jpeg";
 const shooting_sound = new Audio("assets/sfx/laser.mp3");
 const gameoversound = new Audio("assets/sfx/gameover.mp3");
 
+const overlay = document.getElementById('overlay');
+const startButton = document.getElementById('startButton');
+let midLine = canvas.width / 2;
+
 function resizeCanvas() {
   canvas.width = window.innerWidth;
   canvas.height = window.innerHeight;
-  const midLine = canvas.width / 2;
+  midLine = canvas.width / 2;
 }
 resizeCanvas()
 
 let gameOver = false;
 let winnerText = "";
-const midLine = canvas.width / 2;
 
 let keys = {};
 let bullets = [];
@@ -193,7 +196,7 @@ function drawKeyOverlay() {
   const baseY2 = canvas.height - 120;
 
   drawKey("i", baseX2 + keySize + gap, baseY2, keys["i"]);
-  drawKey("ò", baseX2 + 2*(keySize + gap), baseY2, keys["ò_"], active_color="blue");
+  drawKey("-", baseX2 + 2*(keySize + gap), baseY2, keys["ò_"], active_color="blue");
   drawKey("j", baseX2, baseY2 + keySize + gap, keys["j"]);
   drawKey("k", baseX2 + keySize + gap, baseY2 + keySize + gap, keys["k"]);
   drawKey("l", baseX2 + 2*(keySize + gap), baseY2 + keySize + gap, keys["l"]);
@@ -333,9 +336,9 @@ function update() {
     if (keys["j"] || keys["arrowleft"]) player2.x -= player2.speed;
     if (keys["l"] || keys["arrowright"]) player2.x += player2.speed;
 
-    if (keys["ò"]) {
+    if (keys["-"]) {
         shoot(player2, -6);
-        keys["ò"] = false;
+        keys["-"] = false;
         keys["ò_"] = true; //questo è per evidenziare
     }
 
@@ -531,4 +534,15 @@ function gameLoop() {
   requestAnimationFrame(gameLoop);
 }
 
-gameLoop();
+startButton.addEventListener('click', () => {
+    startButton.value= "Starting";
+    overlay.style.display = 'none';
+    console.log("Game started!");
+
+    player1.x = midLine/2;
+    player1.y = canvas.height/2;
+
+    player2.x = midLine + midLine / 2;
+    player2.y = canvas.height / 2;
+    gameLoop();
+  });
